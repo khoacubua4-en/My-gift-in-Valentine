@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💖 Valentine 💖</title>
+
+<style>
+:root{
+    --box: min(80vw,300px);
+}
+
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    height:100vh;
+    background:
+        radial-gradient(circle at top, #ffd1dc, transparent 60%),
+        linear-gradient(#ff9eb5,#ffe6ea);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+}
+
+.container{text-align:center}
+.hidden{display:none}
+
+input{
+    padding:10px;
+    font-size:16px;
+    border-radius:10px;
+    border:none;
+}
+
+button{
+    padding:10px 22px;
+    background:hotpink;
+    color:white;
+    border:none;
+    border-radius:12px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.scratch-box{
+    position:relative;
+    width:var(--box);
+    height:var(--box);
+    margin:auto;
+}
+
+canvas{
+    position:absolute;
+    inset:0;
+    border-radius:20px;
+}
+
+#scratchCanvas{touch-action:none}
+
+#message{
+    margin-top:20px;
+    font-size:22px;
+    color:#d6006f;
+    animation:fadeUp 1s ease-out forwards;
+}
+
+@keyframes fadeUp{
+    from{opacity:0;transform:translateY(20px)}
+    to{opacity:1;transform:translateY(0)}
+}
+
+/* ẢNH BAY */
+#gallery{
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+}
+
+.float-img{
+    position:absolute;
+    width:90px;
+    border-radius:14px;
+    animation:fly 4s linear forwards;
+    box-shadow:0 10px 25px rgba(0,0,0,.3);
+}
+
+@keyframes fly{
+    from{transform:translateY(0) scale(.7);opacity:0}
+    to{transform:translateY(-120vh) scale(1);opacity:1}
+}
+
+/* TIM BAY */
+.heart{
+    position:fixed;
+    color:hotpink;
+    font-size:20px;
+    animation:heartFly 3s linear forwards;
+}
+
+@keyframes heartFly{
+    from{transform:translateY(0);opacity:1}
+    to{transform:translateY(-100vh);opacity:0}
+}
+</style>
+</head>
+
+<body>
+
+<audio id="bgm" src="In Love.mp3" loop></audio>
+
+<div class="container" id="login">
+    <h2>Nhập mật khẩu 💕</h2>
+    <input type="password" id="password">
+    <br><br>
+    <button onclick="unlock()">Mở quà 🎁</button>
+    <p id="error"></p>
+</div>
+
+<div class="container hidden" id="content">
+    <h2>❤️ Cào đi nè ❤️</h2>
+    <div class="scratch-box">
+        <canvas id="imgCanvas"></canvas>
+        <canvas id="scratchCanvas"></canvas>
+    </div>
+    <div id="message" class="hidden">💖 Anh yêu em nhiều lắm 💖</div>
+</div>
+
+<div id="gallery"></div>
+
+<script>
+const images=[...Array(12)].map((_,i)=>`img${i+1}.jpg`);
+const imgCanvas=document.getElementById("imgCanvas");
+const scratchCanvas=document.getElementById("scratchCanvas");
+const imgCtx=imgCanvas.getContext("2d");
+const sc=scratchCanvas.getContext("2d");
+
+const login=document.getElementById("login");
+const content=document.getElementById("content");
+const password=document.getElementById("password");
+const error=document.getElementById("error");
+const message=document.getElementById("message");
+const gallery=document.getElementById("gallery");
+const bgm=document.getElementById("bgm");
+
+let drawing=false,done=false;
+
+/* CANVAS RESPONSIVE */
+function resize(){
+    const size=Math.min(window.innerWidth*0.8,300);
+    imgCanvas.width=scratchCanvas.width=size;
+    imgCanvas.height=scratchCanvas.height=size;
+}
+resize(); window.onresize=resize;
+
+/* MỞ QUÀ */
+function unlock(){
+    if(password.value!=="051008"){
+        error.innerText="Sai mật khẩu 😝";return;
+    }
+    login.classList.add("hidden");
+    content.classList.remove("hidden");
+    bgm.play();
+    initScratch();
+}
+
+/* VẼ */
+function initScratch(){
+    const img=new Image();
+    img.src="love.jpg";
+    img.onload=()=>{
+        imgCtx.drawImage(img,0,0,imgCanvas.width,imgCanvas.height);
+        sc.fillStyle="#ffb6c1";
+        sc.fillRect(0,0,scratchCanvas.width,scratchCanvas.height);
+    }
+}
+
+/* CÀO */
+function scratch(x,y){
+    sc.globalCompositeOperation="destination-out";
+    sc.beginPath();
+    sc.arc(x,y,25,0,Math.PI*2);
+    sc.fill();
+}
+
+/* KIỂM TRA */
+function checkDone(){
+    if(done) return;
+    const d=sc.getImageData(0,0,scratchCanvas.width,scratchCanvas.height).data;
+    let clear=0;
+    for(let i=3;i<d.length;i+=4) if(d[i]===0) clear++;
+    if(clear/d.length>0.18){
+        done=true;
+        sc.clearRect(0,0,scratchCanvas.width,scratchCanvas.height);
+        message.classList.remove("hidden");
+        startLoop();
+        heartLoop();
+    }
+}
+
+/* EVENTS */
+["mousedown","touchstart"].forEach(e=>{
+    scratchCanvas.addEventListener(e,()=>drawing=true);
+});
+["mouseup","touchend"].forEach(e=>{
+    scratchCanvas.addEventListener(e,()=>{drawing=false;checkDone()});
+});
+scratchCanvas.addEventListener("mousemove",e=>{
+    if(!drawing) return;
+    const r=scratchCanvas.getBoundingClientRect();
+    scratch(e.clientX-r.left,e.clientY-r.top);
+});
+scratchCanvas.addEventListener("touchmove",e=>{
+    if(!drawing) return;
+    const r=scratchCanvas.getBoundingClientRect();
+    const t=e.touches[0];
+    scratch(t.clientX-r.left,t.clientY-r.top);
+});
+
+/* ẢNH BAY LẶP */
+function startLoop(){
+    setInterval(()=>{
+        const img=document.createElement("img");
+        img.src=images[Math.floor(Math.random()*images.length)];
+        img.className="float-img";
+        img.style.left=Math.random()*90+"vw";
+        img.style.bottom="-120px";
+        gallery.appendChild(img);
+        setTimeout(()=>img.remove(),4000);
+    },400);
+}
+
+/* TIM BAY */
+function heartLoop(){
+    setInterval(()=>{
+        const h=document.createElement("div");
+        h.className="heart";
+        h.innerHTML="💖";
+        h.style.left=Math.random()*100+"vw";
+        h.style.bottom="0";
+        document.body.appendChild(h);
+        setTimeout(()=>h.remove(),3000);
+    },300);
+}
+</script>
+
+</body>
+</html>
