@@ -6,21 +6,24 @@
 <title>💖 Valentine 💖</title>
 
 <style>
-:root{
-    --box: min(80vw,300px);
-}
+:root{--box:min(80vw,320px)}
 
 body{
     margin:0;
-    font-family:Arial, sans-serif;
     height:100vh;
+    font-family:Arial,sans-serif;
     background:
-        radial-gradient(circle at top, #ffd1dc, transparent 60%),
-        linear-gradient(#ff9eb5,#ffe6ea);
+        radial-gradient(circle at top,#ffd1dc,transparent 60%),
+        linear-gradient(135deg,#ff9eb5,#ffe6ea);
     display:flex;
     justify-content:center;
     align-items:center;
     overflow:hidden;
+    animation:bgMove 6s ease-in-out infinite alternate;
+}
+@keyframes bgMove{
+    from{background-position:0 0}
+    to{background-position:100% 100%}
 }
 
 .container{text-align:center}
@@ -32,13 +35,12 @@ input{
     border-radius:10px;
     border:none;
 }
-
 button{
-    padding:10px 22px;
+    padding:10px 24px;
     background:hotpink;
-    color:white;
+    color:#fff;
     border:none;
-    border-radius:12px;
+    border-radius:14px;
     font-size:16px;
     cursor:pointer;
 }
@@ -49,13 +51,11 @@ button{
     height:var(--box);
     margin:auto;
 }
-
 canvas{
     position:absolute;
     inset:0;
     border-radius:20px;
 }
-
 #scratchCanvas{touch-action:none}
 
 #message{
@@ -64,7 +64,6 @@ canvas{
     color:#d6006f;
     animation:fadeUp 1s ease-out forwards;
 }
-
 @keyframes fadeUp{
     from{opacity:0;transform:translateY(20px)}
     to{opacity:1;transform:translateY(0)}
@@ -76,7 +75,6 @@ canvas{
     inset:0;
     pointer-events:none;
 }
-
 .float-img{
     position:absolute;
     width:90px;
@@ -84,7 +82,6 @@ canvas{
     animation:fly 4s linear forwards;
     box-shadow:0 10px 25px rgba(0,0,0,.3);
 }
-
 @keyframes fly{
     from{transform:translateY(0) scale(.7);opacity:0}
     to{transform:translateY(-120vh) scale(1);opacity:1}
@@ -93,14 +90,39 @@ canvas{
 /* TIM BAY */
 .heart{
     position:fixed;
-    color:hotpink;
-    font-size:20px;
+    font-size:22px;
     animation:heartFly 3s linear forwards;
 }
-
 @keyframes heartFly{
-    from{transform:translateY(0);opacity:1}
-    to{transform:translateY(-100vh);opacity:0}
+    from{transform:translateY(0) scale(.5) rotate(0);opacity:1}
+    to{transform:translateY(-100vh) scale(1.4) rotate(360deg);opacity:0}
+}
+
+/* SPARKLE */
+.spark{
+    position:fixed;
+    pointer-events:none;
+    animation:spark 1s ease-out forwards;
+}
+@keyframes spark{
+    from{transform:scale(1);opacity:1}
+    to{transform:translateY(-40px) scale(0);opacity:0}
+}
+
+/* CONFETTI */
+.confetti{
+    position:fixed;
+    animation:confetti 2s ease-out forwards;
+}
+@keyframes confetti{
+    to{
+        transform:
+        translate(
+            calc(-50vw + 100vw * var(--x)),
+            calc(-50vh + 100vh * var(--y))
+        );
+        opacity:0;
+    }
 }
 </style>
 </head>
@@ -130,6 +152,7 @@ canvas{
 
 <script>
 const images=[...Array(12)].map((_,i)=>`img${i+1}.jpg`);
+
 const imgCanvas=document.getElementById("imgCanvas");
 const scratchCanvas=document.getElementById("scratchCanvas");
 const imgCtx=imgCanvas.getContext("2d");
@@ -145,13 +168,14 @@ const bgm=document.getElementById("bgm");
 
 let drawing=false,done=false;
 
-/* CANVAS RESPONSIVE */
+/* RESPONSIVE */
 function resize(){
-    const size=Math.min(window.innerWidth*0.8,300);
+    const size=Math.min(window.innerWidth*0.8,320);
     imgCanvas.width=scratchCanvas.width=size;
     imgCanvas.height=scratchCanvas.height=size;
 }
-resize(); window.onresize=resize;
+resize();
+window.onresize=resize;
 
 /* MỞ QUÀ */
 function unlock(){
@@ -164,7 +188,7 @@ function unlock(){
     initScratch();
 }
 
-/* VẼ */
+/* ẢNH */
 function initScratch(){
     const img=new Image();
     img.src="love.jpg";
@@ -178,12 +202,25 @@ function initScratch(){
 /* CÀO */
 function scratch(x,y){
     sc.globalCompositeOperation="destination-out";
+    sc.shadowBlur=12;
+    sc.shadowColor="rgba(255,105,180,.8)";
     sc.beginPath();
-    sc.arc(x,y,25,0,Math.PI*2);
+    sc.arc(x,y,30,0,Math.PI*2);
     sc.fill();
 }
 
-/* KIỂM TRA */
+/* SPARK */
+function sparkle(x,y){
+    const s=document.createElement("div");
+    s.className="spark";
+    s.innerHTML="✨";
+    s.style.left=x+"px";
+    s.style.top=y+"px";
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),1000);
+}
+
+/* CHECK */
 function checkDone(){
     if(done) return;
     const d=sc.getImageData(0,0,scratchCanvas.width,scratchCanvas.height).data;
@@ -195,6 +232,7 @@ function checkDone(){
         message.classList.remove("hidden");
         startLoop();
         heartLoop();
+        confetti();
     }
 }
 
@@ -209,15 +247,17 @@ scratchCanvas.addEventListener("mousemove",e=>{
     if(!drawing) return;
     const r=scratchCanvas.getBoundingClientRect();
     scratch(e.clientX-r.left,e.clientY-r.top);
+    sparkle(e.clientX,e.clientY);
 });
 scratchCanvas.addEventListener("touchmove",e=>{
     if(!drawing) return;
     const r=scratchCanvas.getBoundingClientRect();
     const t=e.touches[0];
     scratch(t.clientX-r.left,t.clientY-r.top);
+    sparkle(t.clientX,t.clientY);
 });
 
-/* ẢNH BAY LẶP */
+/* ẢNH BAY */
 function startLoop(){
     setInterval(()=>{
         const img=document.createElement("img");
@@ -230,7 +270,7 @@ function startLoop(){
     },400);
 }
 
-/* TIM BAY */
+/* TIM */
 function heartLoop(){
     setInterval(()=>{
         const h=document.createElement("div");
@@ -242,8 +282,22 @@ function heartLoop(){
         setTimeout(()=>h.remove(),3000);
     },300);
 }
+
+/* CONFETTI */
+function confetti(){
+    for(let i=0;i<80;i++){
+        const c=document.createElement("div");
+        c.className="confetti";
+        c.innerHTML=["💖","✨","💕","🌸"][Math.floor(Math.random()*4)];
+        c.style.left="50vw";
+        c.style.top="50vh";
+        c.style.setProperty("--x",Math.random());
+        c.style.setProperty("--y",Math.random());
+        document.body.appendChild(c);
+        setTimeout(()=>c.remove(),2000);
+    }
+}
 </script>
 
 </body>
 </html>
-
